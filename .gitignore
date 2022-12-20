@@ -1,0 +1,7 @@
+# root
+.DS_Store
+
+# org-info
+/org-info/.env
+/org-info/src/output/
+/org-info/output.csv
