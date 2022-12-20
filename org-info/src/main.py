@@ -83,7 +83,7 @@ def main():
         list.append(org_object)
 
     # Create `output.csv` and dump our list of organizations in there
-    with open('./src/output/output.csv', 'w') as file:
+    with open('./src/output.csv', 'w') as file:
         # creating a csv writer object
         writer = csv.writer(file, delimiter=',')
 

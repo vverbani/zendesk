@@ -3,5 +3,4 @@
 
 # org-info
 /org-info/.env
-/org-info/src/output/
-/org-info/output.csv
+/org-info/src/output.csv

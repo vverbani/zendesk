@@ -1,3 +1,2 @@
 .env
-/src/output/
-output.csv
+/src/output.csv
