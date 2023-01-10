@@ -9,45 +9,49 @@ class Org:
         self.region= region
         self.environment= environment
 
-# Recursively call Zendesk API to get all Organizations
-def get_all():
-    response_list, filtered_list= [],[]
+# Recursively call Zendesk API to get all relevant data
+def get_all(zendesk_url):
 
-    # API url and headers
-    zendesk_url= os.getenv('zendesk_url')
+    response_list= []
     auth_header_bearer=os.getenv('auth_header_bearer')
 
     print('Started organization retrieval.... ... ... .. . . .')
 
     # If API still has more data - keep requesting
     while zendesk_url:
-        org_response= requests.get(zendesk_url, headers={'Authorization': auth_header_bearer})
+        response= requests.get(zendesk_url, headers={'Authorization': auth_header_bearer})
         time.sleep(0.25)
 
         # Keep calling API unless a non-successful response occurs
-        if(org_response.status_code != 200):
+        if(response.status_code != 200):
             return "Something went wrong in your the Zendesk API call. Please check your auth token and/or Zendesk URL"
 
         # Append new data to full data list to not override older data
-        org_list= org_response.json()
-        response_list.extend(org_list['organizations'])
+        list= response.json()
+
+        # Add list type to it's own list, i.e org to org list, user to user list
+        if 'organizations' in zendesk_url:
+            response_list.extend(list['organizations'])
+        else:
+            response_list.extend(list['users'])
 
         # Determine whether there's more data to call the API or not
-        if org_list['meta']['has_more']:
-            zendesk_url= org_list['links']['next']
+        if list['meta']['has_more']:
+            zendesk_url= list['links']['next']
         else:
             zendesk_url= None
 
-    filtered_list= filter_list(response_list)
+    return response_list
 
-    return filtered_list
-
+# Filter all Organizations with only the data we need
 def filter_list(unfiltered_org_list):
     filtered_org_list=[]
 
     for org in unfiltered_org_list:
         # Add default values of '-' if value doesn't exist making easier to read dead space
         name, sla, region, environment= '-','-','-','-'
+
+        id= org['id']
 
         if org['name'] != '':
             name= org['name']
@@ -74,12 +78,14 @@ def filter_list(unfiltered_org_list):
                 environment= 'On-prem w/o MDCB'
 
         # Add org objects to our list of orgs
-        filtered_org_list.append((name,sla,region,environment))
+        filtered_org_list.append((id, name, sla, region, environment))
 
     return filtered_org_list
 
-def upload_to_csv(org_list):
-    headers= ['Name', 'SLA', 'Region', 'Environment']
+def upload_to_csv(list):
+    headers= ['Id', 'Name', 'SLA', 'Region', 'Environment', 'Users']
+
+    filtered_list= filter_list(list)
 
     # Create `output.csv` and dump our list of organizations in there
     with open('./src/output.csv', 'w') as file:
@@ -89,9 +95,9 @@ def upload_to_csv(org_list):
         # Insert our headers
         writer.writerow(headers)
 
-        # Insert actual organization data
-        for x in range(len(org_list)):
-            temp_row=[org_list[x][0], org_list[x][1], org_list[x][2], org_list[x][3]]
+        # Insert organization data
+        for x in range(len(filtered_list)):
+            temp_row=[filtered_list[x][0], filtered_list[x][1], filtered_list[x][2], filtered_list[x][3], filtered_list[x][4]]
             writer.writerow(temp_row)
 
 def main():
@@ -100,8 +106,12 @@ def main():
     # Load .env file
     load_dotenv()
 
-    # Get all of the Organizations in an unfiltered list
-    org_list= get_all()
+    # API URLS for orgs and users
+    zendesk_org_url= os.getenv('zendesk_org_url')
+    zendesk_user_url= os.getenv('zendesk_user_url')
+
+    # Get all of the Organizations and Users in unfiltered lists
+    org_list= get_all(zendesk_org_url)
 
     # Put Organization list in csv
     upload_to_csv(org_list)
