@@ -9,13 +9,19 @@ class Org:
         self.region= region
         self.environment= environment
 
-def get_all(url, header):
-    response_list= []
-    print('Starting organization retrieval.... ... ... .. . . .')
+# Recursively call Zendesk API to get all Organizations
+def get_all():
+    response_list, filtered_list= [],[]
+
+    # API url and headers
+    zendesk_url= os.getenv('zendesk_url')
+    auth_header_bearer=os.getenv('auth_header_bearer')
+
+    print('Started organization retrieval.... ... ... .. . . .')
 
     # If API still has more data - keep requesting
-    while url:
-        org_response= requests.get(url, headers={'Authorization': header})
+    while zendesk_url:
+        org_response= requests.get(zendesk_url, headers={'Authorization': auth_header_bearer})
         time.sleep(0.25)
 
         # Keep calling API unless a non-successful response occurs
@@ -28,27 +34,18 @@ def get_all(url, header):
 
         # Determine whether there's more data to call the API or not
         if org_list['meta']['has_more']:
-            url= org_list['links']['next']
+            zendesk_url= org_list['links']['next']
         else:
-            url= None
+            zendesk_url= None
 
-    return response_list
+    filtered_list= filter_list(response_list)
 
-def main():
-    list= []
-    entries= 0
-    headers= ['Name', 'SLA', 'Region', 'Environment']
+    return filtered_list
 
-    # Load .env file
-    load_dotenv()
+def filter_list(unfiltered_org_list):
+    filtered_org_list=[]
 
-    # API url and headers
-    zendesk_url= os.getenv('zendesk_url')
-    auth_header_bearer=os.getenv('auth_header_bearer')
-
-    org_list= get_all(zendesk_url, auth_header_bearer)
-
-    for org in org_list:
+    for org in unfiltered_org_list:
         # Add default values of '-' if value doesn't exist making easier to read dead space
         name, sla, region, environment= '-','-','-','-'
 
@@ -76,11 +73,13 @@ def main():
             if(tag.lower() == 'on-prem'):
                 environment= 'On-prem w/o MDCB'
 
-        entries += 1
-
         # Add org objects to our list of orgs
-        org_object = Org(name, sla,region, environment)
-        list.append(org_object)
+        filtered_org_list.append((name,sla,region,environment))
+
+    return filtered_org_list
+
+def upload_to_csv(org_list):
+    headers= ['Name', 'SLA', 'Region', 'Environment']
 
     # Create `output.csv` and dump our list of organizations in there
     with open('./src/output.csv', 'w') as file:
@@ -91,12 +90,23 @@ def main():
         writer.writerow(headers)
 
         # Insert actual organization data
-        for x in range(len(list) - 1):
-            temp_row=[list[x].name, list[x].region, list[x].sla, list[x].environment]
+        for x in range(len(org_list)):
+            temp_row=[org_list[x][0], org_list[x][1], org_list[x][2], org_list[x][3]]
             writer.writerow(temp_row)
 
-        print('Purged a total of ' + str(entries) + ' entries into the csv file!')
-        print("Everything has been exported, please look at 'output.csv' in the output folder")
+def main():
+    org_list= []
+
+    # Load .env file
+    load_dotenv()
+
+    # Get all of the Organizations in an unfiltered list
+    org_list= get_all()
+
+    # Put Organization list in csv
+    upload_to_csv(org_list)
+
+    print("Everything has been exported, please look at the 'output.csv' file in the output folder")
 
 if __name__ == "__main__":
     main()
