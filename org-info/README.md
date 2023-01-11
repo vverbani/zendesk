@@ -9,13 +9,14 @@ for gathering the following data from every organization:
 
 ## Start
 
-1. cp .env.example > .env
-2. Get Zendesk url and copy into your `.env` file
-3. Get Zendesk token and copy into your `.env` file
-4. Call the below (copy and paste onto your terminal)
+1. cp .env.example .env
+2. Add Zendesk URL to your `.env` file
+3. Add Zendesk Token to your `.env` file
+4. Call the below command
 ```bash
 
 docker-compose up
 
 ```
+
 5. Import `output.csv` into spreadsheet for viewing

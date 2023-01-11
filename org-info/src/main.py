@@ -1,21 +1,13 @@
 import os, requests, csv, time
 from dotenv import load_dotenv
 
-# Create Organization class for storing org data
-class Org:
-    def __init__(self, name, sla, region, environment):
-        self.name = name
-        self.sla = sla
-        self.region= region
-        self.environment= environment
-
 # Recursively call Zendesk API to get all relevant data
 def get_all(zendesk_url):
 
     response_list= []
     auth_header_bearer=os.getenv('auth_header_bearer')
 
-    print('Started organization retrieval.... ... ... .. . . .')
+    print('Started Zendesk data retrieval.... ... ... .. . . .')
 
     # If API still has more data - keep requesting
     while zendesk_url:
@@ -43,8 +35,8 @@ def get_all(zendesk_url):
 
     return response_list
 
-# Filter all Organizations with only the data we need
-def filter_list(unfiltered_org_list):
+# Filter all organizations with only the data we need
+def filter_org_list(unfiltered_org_list):
     filtered_org_list=[]
 
     for org in unfiltered_org_list:
@@ -78,30 +70,41 @@ def filter_list(unfiltered_org_list):
                 environment= 'On-prem w/o MDCB'
 
         # Add org objects to our list of orgs
-        filtered_org_list.append((id, name, sla, region, environment))
+        filtered_org_list.append({"id": id, "name": name, "sla": sla, "region": region, "environment": environment, "user": ""})
 
     return filtered_org_list
 
+# Add users to organizations
+def users_and_orgs_list(orgs, users):
+
+    org_user_list= []
+
+    for count, org in enumerate(orgs):
+        for user in users:
+            if user['organization_id'] == org['id']:
+                name= user['name'] + ' ' + user['email'] + ' '
+                org['user']= org['user'] + name
+        org_user_list.append(org)
+
+    return org_user_list
+
+# Upload our organization list with users in spreadsheet format
 def upload_to_csv(list):
     headers= ['Id', 'Name', 'SLA', 'Region', 'Environment', 'Users']
-
-    filtered_list= filter_list(list)
 
     # Create `output.csv` and dump our list of organizations in there
     with open('./src/output.csv', 'w') as file:
         # creating a csv writer object
         writer = csv.writer(file, delimiter=',')
 
-        # Insert our headers
+        # Insert our headers and Organization with user data
         writer.writerow(headers)
 
-        # Insert organization data
-        for x in range(len(filtered_list)):
-            temp_row=[filtered_list[x][0], filtered_list[x][1], filtered_list[x][2], filtered_list[x][3], filtered_list[x][4]]
+        for row in list:
+            temp_row=[row['id'], row['name'], row['sla'], row['region'], row['environment'], row['user']]
             writer.writerow(temp_row)
 
 def main():
-    org_list= []
 
     # Load .env file
     load_dotenv()
@@ -110,11 +113,17 @@ def main():
     zendesk_org_url= os.getenv('zendesk_org_url')
     zendesk_user_url= os.getenv('zendesk_user_url')
 
-    # Get all of the Organizations and Users in unfiltered lists
-    org_list= get_all(zendesk_org_url)
+    # Get all of the organizations and users in unfiltered lists
+    unfiltered_org_list= get_all(zendesk_org_url)
+    user_list= get_all(zendesk_user_url)
+
+    # Filter both lists
+    filtered_org_list= filter_org_list(unfiltered_org_list)
+
+    full_list= users_and_orgs_list(filtered_org_list, user_list)
 
     # Put Organization list in csv
-    upload_to_csv(org_list)
+    upload_to_csv(full_list)
 
     print("Everything has been exported, please look at the 'output.csv' file in the output folder")
 
