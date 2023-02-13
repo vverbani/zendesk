@@ -74,6 +74,15 @@ def filter_org_list(unfiltered_org_list):
 
     return filtered_org_list
 
+def minimum_6_users(org_list):
+    org_user_list_greater= []
+
+    for org in org_list:
+        if org['user'].count('@') > 6:
+            org_user_list_greater.append(org)
+
+    return org_user_list_greater
+
 # Add users to organizations
 def users_and_orgs_list(orgs, users):
 
