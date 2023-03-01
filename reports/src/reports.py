@@ -5,8 +5,8 @@ from datetime import timedelta
 date_format= '%Y-%m-%d'
 
 # Starting and ending date - fill these out
-start_date= datetime.strptime('2023-02-06', date_format)
-end_date= datetime.strptime('2023-02-12', date_format)
+start_date= datetime.strptime('2023-02-20', date_format)
+end_date= datetime.strptime('2023-02-26', date_format)
 
 # Bringing total list of tickets - filtering to the tickets inside the date only
 def csv_to_list():
@@ -99,15 +99,15 @@ def first_response_average(ticket_list):
             no_sla_count += 1
 
     # TO-DO: Clean up? Use extend instead of append
-    first_response_average.append(convert_time(no_sla / no_sla_count))
+    first_response_average.append(convert_time(no_sla / no_sla_count)) if no_sla_count > 0 else first_response_average.append("n/a")
 
-    first_response_average.append(convert_time(gold_p1 / gold_p1_count))
-    first_response_average.append(convert_time(gold_p2 / gold_p2_count))
-    first_response_average.append(convert_time(gold_p3 / gold_p3_count))
+    first_response_average.append(convert_time(gold_p1 / gold_p1_count)) if gold_p1_count > 0 else first_response_average.append("n/a")
+    first_response_average.append(convert_time(gold_p2 / gold_p2_count)) if gold_p2_count > 0 else first_response_average.append("n/a")
+    first_response_average.append(convert_time(gold_p3 / gold_p3_count)) if gold_p3_count > 0 else first_response_average.append("n/a")
 
-    first_response_average.append(convert_time(silver_p1 / silver_p1_count))
-    first_response_average.append(convert_time(silver_p2 / silver_p2_count))
-    first_response_average.append(convert_time(silver_p3 / silver_p3_count))
+    first_response_average.append(convert_time(silver_p1 / silver_p1_count)) if silver_p1_count > 0 else first_response_average.append("n/a")
+    first_response_average.append(convert_time(silver_p2 / silver_p2_count)) if silver_p2_count > 0 else first_response_average.append("n/a")
+    first_response_average.append(convert_time(silver_p3 / silver_p3_count)) if silver_p3_count > 0 else first_response_average.append("n/a")
 
     return first_response_average
 
@@ -130,7 +130,7 @@ def severity_count(ticket_list):
 # Retrieve how the satisfaction scores were given and rated
 def csat_scores(ticket_list):
     scores=[]
-    offered, not_offered, good, bad= 0, 0, 0, 0
+    offered, not_offered, good, bad, customer_satisfication= 0, 0, 0, 0, 0
 
     for ticket in ticket_list:
         if ticket[24] == 'Offered':
@@ -143,8 +143,10 @@ def csat_scores(ticket_list):
             bad += 1
 
     replies= good + bad
+    customer_satisfication= round((good/ replies) * 100,2)
     reply_percentage= round((replies / offered) * 100,2)
-    scores.extend([replies, offered, reply_percentage])
+
+    scores.extend([customer_satisfication,replies, offered, reply_percentage])
 
     return scores
 
@@ -166,31 +168,37 @@ def main():
     full_report=[]
 
     # The date of the report
-    report_date= str(start_date) + ' - ' + str(end_date)
+    report_date= str(start_date)[:10] + ' - ' + str(end_date)[:10]
 
     # Swift through the csv file full of tickets and put them into a iterable list
     ticket_list= csv_to_list()
 
     # The total ticket count for the weekly report
     ticket_count= len(ticket_list)
+    # print(f'Total ticket count: {ticket_count}')
 
     # The total number of tickets that were SLA tickets
     ticket_sla_count= total_sla_tickets(ticket_list)
+    # print(f'Total SLA Ticket count: {ticket_sla_count}')
 
     # The total number of tickets that were on-hold tickets, i.e Jira/internal tickets
     bug_tickets= total_bug_tickets(ticket_list)
+    # print(f'Total tickets that were bugs: {bug_tickets}')
 
     # This is a list of all the response averages for each SLA
     response_averages= first_response_average(ticket_list)
+    # print(f'Here are the response averages: {response_averages}')
 
     # List of total severities, i.e p1 (high), p2 (medium) and p3 (low)
     ticket_severity= severity_count(ticket_list)
+    # print(f'Here are the ticket severity counts: {ticket_severity}')
 
     # List of the CSAT scores, i.e offers, replies, percentage of how many replied
     satisfaction_score= csat_scores(ticket_list)
+    # print(f'Here are the satisfaction scores for all the tickets: {satisfaction_score}')
 
     # Convert to all answers into one list so it's easier to filter/export to file afterwards
-    full_report.extend([report_date, ' ', ticket_count, ticket_sla_count, bug_tickets, ' ', response_averages, ' ', ' ',' ', ticket_severity, ' ', satisfaction_score])
+    full_report.extend([report_date, ' ', ticket_count, ticket_sla_count, ' ',' ', bug_tickets, ' ', response_averages, ' ', ' ',' ', ticket_severity, ' ', satisfaction_score])
 
     export_report(full_report)
 
