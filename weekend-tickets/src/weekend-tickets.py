@@ -1,7 +1,6 @@
 import csv
 import pandas as pd
 
-date_format= '%Y-%m-%d'
 SATURDAY= 5
 SUNDAY= 6
 
@@ -20,11 +19,10 @@ def csv_to_list():
             if line[16] == 'Created at':
                 continue
 
-            # Get the day in week - Monday == 0, Sunday == 6
+            # Get the day of ticket creation
             day= pd.Timestamp(str(line[16][:10]))
 
             if day.dayofweek == SATURDAY or day.dayofweek == SUNDAY:
-                # print(day.dayofweek, day.day_name())
                 ticket_list.append(line)
 
     return ticket_list
@@ -46,7 +44,10 @@ def get_sla(tags):
 
 # Export the list of weekend tickets only
 def export_tickets_only(ticket_list):
-    spreadsheet_headers= ['Ticket Id', 'Created Date', 'Requester Domain', 'Ticket Title', 'SLA', 'Priority', 'First Resolution' ]
+
+    # Define our spreadsheet headers
+    spreadsheet_headers= ['Ticket Id', 'Created Date', 'Requester Domain', 'Ticket Title', 'SLA', 'Priority', 'First Resolution']
+
     # Create `output.csv` and dump our list of organizations in there
     with open('./output.csv', 'w', newline='') as file:
 
@@ -59,7 +60,6 @@ def export_tickets_only(ticket_list):
             writer.writerow(temp_row)
 
 def main():
-
     weekend_tickets= csv_to_list()
     export_tickets_only(weekend_tickets)
 
