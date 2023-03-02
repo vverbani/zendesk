@@ -8,3 +8,7 @@
 # reports
 /reports/*.csv
 /reports/*.zip
+
+# weekend tickets
+/weekend-tickets/*.csv
+/weekend-tickets/*.zip
