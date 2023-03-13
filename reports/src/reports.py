@@ -2,11 +2,20 @@ import csv
 from datetime import datetime
 from datetime import timedelta
 
+# Date format
 date_format= '%Y-%m-%d'
 
 # Starting and ending date - fill these out
-start_date= datetime.strptime('2023-02-20', date_format)
-end_date= datetime.strptime('2023-02-26', date_format)
+start_date= datetime.strptime('2023-02-27', date_format)
+end_date= datetime.strptime('2023-03-05', date_format)
+
+# Global SLA times per SLA
+GOLD_P1_SLA= 1 * 60
+GOLD_P2_SLA= 2 * 60
+GOLD_P3_SLA= 24 * 60
+SILVER_P1_SLA= 4 * 60
+SILVER_P2_SLA= 12 * 60
+SILVER_P3_SLA= 24 * 60
 
 # Bringing total list of tickets - filtering to the tickets inside the date only
 def csv_to_list():
@@ -111,6 +120,53 @@ def first_response_average(ticket_list):
 
     return first_response_average
 
+def sla_breaches(ticket_list, ticket_count):
+    breach, breach_percentage= 0,0
+    # Ticket[29] == first response
+
+    for ticket in ticket_list:
+        # First Response isn't documented
+        if ticket[29] == '':
+            continue
+
+        if 'gold' in ticket[11]:
+            # Gold SLA P1 (Urgent): 1 hour
+            if ticket[13] == 'Urgent' and int(ticket[29]) > GOLD_P1_SLA:
+                print(f'Zendesk Id that was breached: https://tyksupport.zendesk.com/agent/tickets/{ticket[1]}')
+                breach += 1
+            # Gold SLA P2 (High): 2 hour
+            if ticket[13] == 'High' and int(ticket[29]) > GOLD_P2_SLA:
+                print(f'Zendesk Id that was breached: https://tyksupport.zendesk.com/agent/tickets/{ticket[1]}')
+                breach += 1
+            # Gold SLA P3 (Normal/ low): 24 hour
+            if ticket[13] == 'Normal' or ticket[13] == 'Low':
+                if int(ticket[29]) >  GOLD_P3_SLA:
+                    print(f'Zendesk Id that was breached: https://tyksupport.zendesk.com/agent/tickets/{ticket[1]}')
+                    breach += 1
+
+        if 'silver' in ticket[11]:
+            # Silver SLA P1 (Urgent): 4 hour
+            if ticket[13] == 'Urgent' and int(ticket[29]) > SILVER_P1_SLA:
+                print(f'Zendesk Id that was breached: https://tyksupport.zendesk.com/agent/tickets/{ticket[1]}')
+                breach += 1
+            # Silver SLA P2 (High): 12 hour
+            if ticket[13] == 'High' and int(ticket[29]) > SILVER_P2_SLA:
+                print(f'Zendesk Id that was breached: https://tyksupport.zendesk.com/agent/tickets/{ticket[1]}')
+                breach += 1
+            # Silver SLA P3 (Normal/ low): 24 hour
+            if ticket[13] == 'Normal' or ticket[13] == 'Low':
+                if int(ticket[29]) >  SILVER_P3_SLA:
+                    print(f'Zendesk Id that was breached: https://tyksupport.zendesk.com/agent/tickets/{ticket[1]}')
+                    breach += 1
+
+    # Calculate breach percentage
+    if breach == 0:
+        breach_percentage= 100
+    else:
+        breach_percentage= 100 - round((breach/ ticket_count) * 100,2)
+
+    return breach_percentage
+
 # Retrieve the total severity count of all tickets
 def severity_count(ticket_list):
     severities=[]
@@ -140,6 +196,7 @@ def csat_scores(ticket_list):
         elif ticket[24] == 'Good':
             good += 1
         else:
+            print(f'Bad Rating: https://tyksupport.zendesk.com/agent/tickets/{ticket[1]}')
             bad += 1
 
     replies= good + bad
@@ -195,10 +252,12 @@ def main():
 
     # List of the CSAT scores, i.e offers, replies, percentage of how many replied
     satisfaction_score= csat_scores(ticket_list)
-    # print(f'Here are the satisfaction scores for all the tickets: {satisfaction_score}')
+
+    # Total amount of breaches we've had
+    breaches_percentage= sla_breaches(ticket_list, int(ticket_count))
 
     # Convert to all answers into one list so it's easier to filter/export to file afterwards
-    full_report.extend([report_date, ' ', ticket_count, ticket_sla_count, ' ',' ', bug_tickets, ' ', response_averages, ' ', ' ',' ', ticket_severity, ' ', satisfaction_score])
+    full_report.extend([report_date, ' ', ticket_count, ticket_sla_count, ' ',' ', bug_tickets, ' ', response_averages, ' ', breaches_percentage ,' ', ' ',' ', ticket_severity, ' ', satisfaction_score])
 
     export_report(full_report)
 
