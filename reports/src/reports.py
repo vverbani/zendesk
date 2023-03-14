@@ -6,16 +6,16 @@ from datetime import timedelta
 date_format= '%Y-%m-%d'
 
 # Starting and ending date - fill these out
-start_date= datetime.strptime('2023-02-27', date_format)
-end_date= datetime.strptime('2023-03-05', date_format)
+start_date= datetime.strptime('2023-01-02', date_format)
+end_date= datetime.strptime('2023-01-08', date_format)
 
 # Global SLA times per SLA
-GOLD_P1_SLA= 1 * 60
-GOLD_P2_SLA= 2 * 60
-GOLD_P3_SLA= 24 * 60
-SILVER_P1_SLA= 4 * 60
-SILVER_P2_SLA= 12 * 60
-SILVER_P3_SLA= 24 * 60
+GOLD_P1_SLA= 1 * 60 # 1 hour
+GOLD_P2_SLA= 2 * 60 # 2 hours
+GOLD_P3_SLA= 24 * 60 # 24 hours
+SILVER_P1_SLA= 4 * 60 # 4 hours
+SILVER_P2_SLA= 12 * 60 # 12 hours
+SILVER_P3_SLA= 24 * 60 # 24 hours
 
 # Bringing total list of tickets - filtering to the tickets inside the date only
 def csv_to_list():
@@ -61,10 +61,11 @@ def total_bug_tickets(ticket_list):
     return round(total_bugs_percent, 2)
 
 # Convert minutes to hours, minutes and seconds
-def convert_time(minutes):
-    sec= minutes * 60
-    time= timedelta(seconds=sec)
-    return time
+def convert_time(minutes_given):
+    minutes, seconds= divmod(minutes_given * 60, 60)
+    hours, minutes= divmod(minutes, 60)
+
+    return '%02d:%02d:%02d' % (hours, minutes, seconds) # return format 01:34:50 (hh:mm:ss)
 
 # Retrieve the first response average for all tickets
 def first_response_average(ticket_list):
