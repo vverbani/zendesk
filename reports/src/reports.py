@@ -1,13 +1,12 @@
 import csv
 from datetime import datetime
-from datetime import timedelta
 
 # Date format
 date_format= '%Y-%m-%d'
 
 # Starting and ending date - fill these out
-start_date= datetime.strptime('2023-01-02', date_format)
-end_date= datetime.strptime('2023-01-08', date_format)
+start_date= datetime.strptime('2023-04-03', date_format)
+end_date= datetime.strptime('2023-04-09', date_format)
 
 # Global SLA times per SLA
 GOLD_P1_SLA= 1 * 60 # 1 hour
@@ -24,7 +23,7 @@ def csv_to_list():
     # Create `output.csv` and dump our list of organizations in there
     with open('../reports.csv', 'r') as file:
         # creating a csv writer object
-        reader = csv.reader(file)
+        reader= csv.reader(file)
 
         for line in reader:
 
@@ -121,6 +120,7 @@ def first_response_average(ticket_list):
 
     return first_response_average
 
+# Retrieve the breach percentage of all the ticket(s) that were a breach of SLA
 def sla_breaches(ticket_list, ticket_count):
     breach, breach_percentage= 0,0
     # Ticket[29] == first response
@@ -187,7 +187,7 @@ def severity_count(ticket_list):
 # Retrieve how the satisfaction scores were given and rated
 def csat_scores(ticket_list):
     scores=[]
-    offered, not_offered, good, bad, customer_satisfication= 0, 0, 0, 0, 0
+    offered, not_offered, good, bad, customer_satisfication, reply_percentage= 0, 0, 0, 0, 0, 0
 
     for ticket in ticket_list:
         if ticket[24] == 'Offered':
@@ -201,8 +201,9 @@ def csat_scores(ticket_list):
             bad += 1
 
     replies= good + bad
-    customer_satisfication= round((good/ replies) * 100,2)
-    reply_percentage= round((replies / offered) * 100,2)
+    if replies > 0: 
+        customer_satisfication= round((good/ replies) * 100,2)
+        reply_percentage= round((replies / offered) * 100,2)
 
     scores.extend([customer_satisfication,replies, offered, reply_percentage])
 
